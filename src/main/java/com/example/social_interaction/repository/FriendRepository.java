@@ -16,4 +16,9 @@ public interface FriendRepository extends MongoRepository<Friends,String> {
             String sender2, String receiver2
     );
 
+    boolean existsBySenderIdAndReceiverIdOrSenderIdAndReceiverId(
+            String sender1, String receiver1,
+            String sender2, String receiver2
+    );
+
 }

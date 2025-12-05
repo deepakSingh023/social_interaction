@@ -1,8 +1,8 @@
 package com.example.social_interaction.service;
 
-import com.example.social_interaction.dto.FriendRequestDTO;
 
 public interface FriendService {
 
-    void addFriend(FriendRequestDTO data);
+    void addFriend(String senderId , String receiverId);
+    void removeFriend(String senderId, String receiverId);
 }

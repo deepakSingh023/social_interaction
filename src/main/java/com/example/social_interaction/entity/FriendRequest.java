@@ -28,9 +28,7 @@ public class FriendRequest {
     @Builder.Default
     private FriendRequestStatus status = FriendRequestStatus.PENDING;
 
-    private Date ReceivedAt;
-
-    private Date AcceptedAt;
+    private Date receivedAt;
 
 
 }

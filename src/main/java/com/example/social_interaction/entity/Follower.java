@@ -18,9 +18,9 @@ public class Follower {
     @Id
     private String id;
 
-    private String userId;
+    private String userId;//me
 
-    private String followerId;
+    private String followedId;//the person being followed
 
     private Date createdAt;
 
