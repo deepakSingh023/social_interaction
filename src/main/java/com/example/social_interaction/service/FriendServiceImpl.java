@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -88,6 +89,12 @@ public class FriendServiceImpl implements FriendService{
         }
 
         friendRepository.delete(friend.get());
+    }
+
+    @Override
+    public List<Friends> getFriends(String userId){
+
+       return  friendRepository.findBySenderIdOrReceiverId(userId,userId);
     }
 
 

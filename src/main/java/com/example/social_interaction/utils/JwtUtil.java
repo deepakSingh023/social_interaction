@@ -1,0 +1,33 @@
+package com.example.social_interaction.utils;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import org.springframework.beans.factory.annotation.Value;
+
+public class JwtUtil {
+
+
+    private String secret= "my_secretr";
+
+    public String extractId(String token){
+        return extractAllClaims(token).getSubject();
+    }
+
+
+    public boolean isTokenValid(String token){
+        try{
+            extractAllClaims(token);
+            return true;
+        }catch (Exception e){
+            return false;
+        }
+    }
+
+
+    private Claims extractAllClaims(String token) {
+        return Jwts.parser()
+                .setSigningKey(secret.getBytes())
+                .parseClaimsJws(token)
+                .getBody();
+    }
+}
