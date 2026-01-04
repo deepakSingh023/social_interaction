@@ -24,4 +24,5 @@ public class Follower {
 
     private Date createdAt;
 
+    private Boolean prvAcc;
 }

@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 
 public class JwtUtil {
 
-
-    private String secret= "my_secretr";
+    @Value("${my-secret-value}")
+    private String secret;
 
     public String extractId(String token){
         return extractAllClaims(token).getSubject();

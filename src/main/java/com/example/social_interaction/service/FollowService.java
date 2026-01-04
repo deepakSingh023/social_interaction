@@ -1,5 +1,7 @@
 package com.example.social_interaction.service;
+import com.example.social_interaction.entity.FollowRequest;
 import com.example.social_interaction.entity.Follower;
+import com.example.social_interaction.repository.FollowRequestRepository;
 import com.example.social_interaction.repository.RelationRepository;
 import com.example.social_interaction.repository.UserRepository;
 import lombok.AllArgsConstructor;
@@ -7,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -22,47 +25,124 @@ public class FollowService implements RelationService{
 
   private final UserRepository userRepository;
 
+  private final FollowRequestRepository followRequestRepository;
 
-  @Override
-  public void followRequest(String userId, String followedId){
+    @Override
+    public void followRequest(String userId, String followedId, Boolean prvAcc) {
+
+        if (!userRepository.existsById(userId)) {
+            throw new IllegalArgumentException("Sender user does not exist");
+        }
+
+        if (!userRepository.existsById(followedId)) {
+            throw new IllegalArgumentException("Receiver user does not exist");
+        }
+
+        if (followedId.equals(userId)) {
+            throw new IllegalArgumentException("You cannot send a follow request to yourself");
+        }
+
+        // Already following
+        if (relationRepository.existsByUserIdAndFollowedId(userId, followedId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Already following");
+        }
+
+        // 🔒 Private account → create follow request
+        if (Boolean.TRUE.equals(prvAcc)) {
+
+            if (followRequestRepository
+                    .existsByUserIdAndFollowedId(userId, followedId)) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Follow request already sent");
+            }
+
+            FollowRequest request = FollowRequest.builder()
+                    .userId(userId)
+                    .followedId(followedId)
+                    .createdAt(Instant.now())
+                    .build();
+
+            followRequestRepository.save(request);
+            return;
+        }
 
 
-      if (!userRepository.existsById(userId)){
-          throw new IllegalArgumentException("Sender user does not exist");
-      }
+        Follower follower = Follower.builder()
+                .userId(userId)
+                .followedId(followedId)
+                .createdAt(new Date())
+                .build();
 
-      if (!userRepository.existsById(followedId)) {
-          throw new IllegalArgumentException("Receiver user does not exist");
-      }
+        relationRepository.save(follower);
+    }
 
-      if (followedId.equals(userId)) {
-          throw new IllegalArgumentException("You cannot send friend request to yourself");
-      }
+    @Override
+    public void acceptFollowRequest(String requestId) {
 
-      if(relationRepository.existsByUserIdAndFollowedId(userId, followedId)){
-          throw new ResponseStatusException(
-                  HttpStatus.CONFLICT,
-                  "Already following");
+        FollowRequest request = followRequestRepository.findById(requestId)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Follow request not found"));
 
-      }
+        String userId = request.getUserId();        // sender
+        String followedId = request.getFollowedId(); // receiver (me)
 
-      Follower f = Follower.builder()
-              .userId( userId)
-              .followedId(followedId)
-              .createdAt(new Date())
-              .build();
+        // Prevent duplicate followers
+        if (relationRepository.existsByUserIdAndFollowedId(userId, followedId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Already following");
+        }
 
-      relationRepository.save(f);
-  }
+        // Create follower relationship
+        Follower follower = Follower.builder()
+                .userId(userId)
+                .followedId(followedId)
+                .createdAt(new Date())
+                .prvAcc(true) // accepted from private account
+                .build();
 
-  @Override
-  public void stopFollowing(String followedId,String userId) {// this method is for a person to stop following someone
+        relationRepository.save(follower);
+
+        // Delete follow request after acceptance
+        followRequestRepository.deleteById(requestId);
+    }
+
+
+    @Override
+    public void rejectFollowRequest(String requestId) {
+
+        if (!followRequestRepository.existsById(requestId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Follow request not found");
+        }
+
+        followRequestRepository.deleteById(requestId);
+    }
+
+
+
+
+
+
+
+
+
+
+
+    @Override
+    public void stopFollowing(String followedId,String userId) {// this method is for a person to stop following someone
       Follower follower = relationRepository
               .findByUserIdAndFollowedId(userId,followedId)
               .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No follow found"));
 
       relationRepository.delete(follower);
-  }
+    }
 
     @Override
     public void removeFollower(String userId ,  String followedById) {//this methos is for a person to stop someone or remove someone from his followers
