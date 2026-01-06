@@ -51,7 +51,7 @@ public class SecurityConfig {
 
         // ⚠️ Change this to your frontend domain in production
         config.setAllowedOrigins(List.of(
-                "http://localhost:3000"
+                "http://localhost:3000","https://social-interaction-by8w.onrender.com"
         ));
 
         config.setAllowedMethods(List.of(
