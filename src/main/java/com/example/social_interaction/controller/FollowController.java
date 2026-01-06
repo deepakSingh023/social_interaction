@@ -1,15 +1,15 @@
 package com.example.social_interaction.controller;
 
-
-
+import com.example.social_interaction.entity.FollowRequest;
 import com.example.social_interaction.entity.Follower;
 import com.example.social_interaction.service.RelationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/relations")
@@ -18,61 +18,112 @@ public class FollowController {
 
     private final RelationService relationService;
 
+    /**
+     * Follow a user
+     * (current user is taken from JWT)
+     */
     @PostMapping("/follow")
     public ResponseEntity<Void> follow(
-            @RequestParam String userId,
             @RequestParam String followedId,
-            @RequestParam Boolean prvAcc
+            @RequestParam Boolean prvAcc,
+            Authentication authentication
     ) {
-        relationService.followRequest(userId, followedId, prvAcc);
+        String userId = authentication.getPrincipal().toString();
+        relationService.followRequest(userId, followedId ,prvAcc);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    @PostMapping("/follow-requests/{requestId}/accept")
-    public ResponseEntity<Void> acceptFollowRequest(
-            @PathVariable String requestId
-    ) {
-        relationService.acceptFollowRequest(requestId);
-        return ResponseEntity.ok().build();
-    }
-
-    @DeleteMapping("/follow-requests/{requestId}/reject")
-    public ResponseEntity<Void> rejectFollowRequest(
-            @PathVariable String requestId
-    ) {
-        relationService.rejectFollowRequest(requestId);
-        return ResponseEntity.noContent().build();
-    }
-
+    /**
+     * Unfollow a user
+     */
     @DeleteMapping("/unfollow")
-    public ResponseEntity<Void> stopFollowing(
-            @RequestParam String userId,
-            @RequestParam String followedId
+    public ResponseEntity<Void> unfollow(
+            @RequestParam String followedId,
+            Authentication authentication
     ) {
+        String userId = authentication.getPrincipal().toString();
         relationService.stopFollowing(userId, followedId);
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/remove-follower")
+    /**
+     * Remove someone from my followers
+     */
+    @DeleteMapping("/followers/{followerId}")
     public ResponseEntity<Void> removeFollower(
-            @RequestParam String userId,
-            @RequestParam String followedById
+            @PathVariable String followerId,
+            Authentication authentication
     ) {
-        relationService.removeFollower(followedById, userId);
+        String userId = authentication.getPrincipal().toString();
+        relationService.removeFollower(followerId, userId);
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/{userId}/followers")
-    public ResponseEntity<List<Follower>> getFollowers(
-            @PathVariable String userId
+    /**
+     * Accept a follow request
+     */
+    @PostMapping("/follow-requests/{requestId}/accept")
+    public ResponseEntity<Void> acceptFollowRequest(
+            @PathVariable String requestId,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(relationService.getFollowers(userId));
+        String userId = authentication.getPrincipal().toString();
+        relationService.acceptFollowRequest(requestId);
+        return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/{userId}/following")
-    public ResponseEntity<List<Follower>> getFollowing(
-            @PathVariable String userId
+    /**
+     * Reject a follow request
+     */
+    @DeleteMapping("/follow-requests/{requestId}")
+    public ResponseEntity<Void> rejectFollowRequest(
+            @PathVariable String requestId,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(relationService.getFollowing(userId));
+        String userId = authentication.getPrincipal().toString();
+        relationService.rejectFollowRequest(requestId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Get my followers (paginated)
+     */
+    @GetMapping("/me/followers")
+    public ResponseEntity<Page<Follower>> getMyFollowers(
+            Authentication authentication,
+            Pageable pageable
+    ) {
+        String userId = authentication.getPrincipal().toString();
+        return ResponseEntity.ok(
+                relationService.getFollowers(userId, pageable)
+        );
+    }
+
+    /**
+     * Get users I am following (paginated)
+     */
+    @GetMapping("/me/following")
+    public ResponseEntity<Page<Follower>> getMyFollowing(
+            Authentication authentication,
+            Pageable pageable
+    ) {
+        String userId = authentication.getPrincipal().toString();
+        return ResponseEntity.ok(
+                relationService.getFollowing(userId, pageable)
+        );
+    }
+
+    /**
+     * Get my pending follow requests (paginated)
+     */
+    @GetMapping("/me/follow-requests")
+    public ResponseEntity<Page<FollowRequest>> getMyFollowRequests(
+            Authentication authentication,
+            Pageable pageable
+    ) {
+        String userId = authentication.getPrincipal().toString();
+        return ResponseEntity.ok(
+                relationService.getFollowRequests(userId, pageable)
+        );
     }
 }

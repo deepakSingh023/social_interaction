@@ -5,6 +5,8 @@ import com.example.social_interaction.repository.FollowRequestRepository;
 import com.example.social_interaction.repository.RelationRepository;
 import com.example.social_interaction.repository.UserRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -125,46 +127,43 @@ public class FollowService implements RelationService{
         followRequestRepository.deleteById(requestId);
     }
 
-
-
-
-
-
-
-
-
-
-
     @Override
-    public void stopFollowing(String followedId,String userId) {// this method is for a person to stop following someone
-      Follower follower = relationRepository
-              .findByUserIdAndFollowedId(userId,followedId)
-              .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No follow found"));
+    public void stopFollowing(String userId, String followedId) {
+        Follower follower = relationRepository
+                .findByUserIdAndFollowedId(userId, followedId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "No follow found"));
 
-      relationRepository.delete(follower);
+        relationRepository.delete(follower);
     }
 
     @Override
-    public void removeFollower(String userId ,  String followedById) {//this methos is for a person to stop someone or remove someone from his followers
+    public void removeFollower(String followedById, String userId) {
         Follower follower = relationRepository
-                .findByUserIdAndFollowedId(followedById , userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No follow found"));
+                .findByUserIdAndFollowedId(followedById, userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "No follow found"));
 
         relationRepository.delete(follower);
     }
 
 
+    @Override
+    public Page<FollowRequest> getFollowRequests(String userId , Pageable pageable){
+    return followRequestRepository.findByUserId(userId , pageable);
 
+    }
 
+    @Override
+    public Page<Follower> getFollowing(String userId, Pageable pageable) {
+        return relationRepository.findByUserId(userId, pageable);
+    }
 
-  @Override
-    public List<Follower> getFollowing(String userId){
-      return relationRepository.findByUserId(userId);
-  }
+    @Override
+    public Page<Follower> getFollowers(String userId, Pageable pageable) {
+        return relationRepository.findByFollowedId(userId, pageable);
+    }
 
-  @Override
-    public List<Follower> getFollowers(String userId){
-      return  relationRepository.findByFollowedId(userId);
-  }
 }
+
 

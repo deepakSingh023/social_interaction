@@ -16,7 +16,7 @@ import java.util.Date;
 @AllArgsConstructor
 @Data
 @Document(collection = "friend_requests")
-public class FriendRequest {
+public class  FriendRequest {
 
     @Id
     private String id;
@@ -25,8 +25,7 @@ public class FriendRequest {
 
     private String receiverId;
 
-    @Builder.Default
-    private FriendRequestStatus status = FriendRequestStatus.PENDING;
+
 
     private Date receivedAt;
 

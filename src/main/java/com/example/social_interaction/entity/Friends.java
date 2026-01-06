@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.Instant;
 import java.util.Date;
 
 @Document(collection = "friends")
@@ -23,6 +24,6 @@ public class Friends {
 
     private String receiverId ;
 
-    private Date acceptedAt;
+    private Instant acceptedAt;
 
 }
