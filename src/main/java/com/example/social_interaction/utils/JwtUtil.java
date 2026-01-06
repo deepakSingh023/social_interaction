@@ -3,7 +3,10 @@ package com.example.social_interaction.utils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
+
+@Component
 public class JwtUtil {
 
     @Value("${my-secret-value}")
