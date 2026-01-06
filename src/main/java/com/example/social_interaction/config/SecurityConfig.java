@@ -24,18 +24,21 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-                // Enable CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                // Disable CSRF (JWT-based APIs)
                 .csrf(csrf -> csrf.disable())
 
-                // Secure all endpoints
                 .authorizeHttpRequests(auth -> auth
+                        // Health check & public endpoints
+                        .requestMatchers("/api/health").permitAll()
+                        .requestMatchers("/auth/**").permitAll()
+
+                        // Allow CORS preflight
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // Everything else requires JWT
                         .anyRequest().authenticated()
                 )
 
-                // JWT filter
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
