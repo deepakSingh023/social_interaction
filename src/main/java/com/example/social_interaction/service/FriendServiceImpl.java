@@ -1,5 +1,6 @@
 package com.example.social_interaction.service;
 
+import com.example.social_interaction.dto.friendRequest;
 import com.example.social_interaction.entity.FollowRequest;
 import com.example.social_interaction.entity.FriendRequest;
 import com.example.social_interaction.entity.Friends;
@@ -33,20 +34,20 @@ public class FriendServiceImpl implements FriendService {
     // ---------------- ADD FRIEND ----------------
 
     @Override
-    public void addFriend(String senderId, String receiverId) {
+    public void addFriend(String senderId, friendRequest request) {
 
         if (!userRepository.existsById(senderId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sender not found");
         }
 
-        if (!userRepository.existsById(receiverId)) {
+        if (!userRepository.existsById(request.getReceiverId())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Receiver not found");
         }
 
         boolean alreadyFriends =
                 friendRepository.existsBySenderIdAndReceiverIdOrSenderIdAndReceiverId(
-                        senderId, receiverId,
-                        receiverId, senderId
+                        senderId, request.getReceiverId(),
+                        request.getReceiverId(), senderId
                 );
 
         if (alreadyFriends) {
@@ -55,8 +56,8 @@ public class FriendServiceImpl implements FriendService {
 
         Optional<FriendRequest> existingRequest =
                 friendRequestRepository.findBySenderIdAndReceiverIdOrReceiverIdAndSenderId(
-                        senderId, receiverId,
-                        senderId, receiverId
+                        senderId, request.getReceiverId(),
+                        senderId,request.getReceiverId()
                 );
 
         // Auto-accept if opposite request exists
@@ -65,7 +66,11 @@ public class FriendServiceImpl implements FriendService {
 
             Friends friend = Friends.builder()
                     .senderId(req.getSenderId())
+                    .senderAvatar(request.getSenderAvatar())
+                    .senderName(request.getSenderName())
                     .receiverId(req.getReceiverId())
+                    .receiverAvatar(request.getReceiverAvatar())
+                    .receiverName(request.getReceiverName())
                     .acceptedAt(Instant.now())
                     .build();
 
@@ -74,13 +79,17 @@ public class FriendServiceImpl implements FriendService {
             return;
         }
 
-        FriendRequest request = FriendRequest.builder()
-                .senderId(senderId)
-                .receiverId(receiverId)
+        FriendRequest createRequest = FriendRequest.builder()
+                .senderId(request.getSenderId())
+                .senderAvatar(request.getSenderAvatar())
+                .senderName(request.getSenderName())
+                .receiverId(request.getReceiverId())
+                .receiverAvatar(request.getReceiverAvatar())
+                .receiverName(request.getReceiverName())
                 .receivedAt(new Date())
                 .build();
 
-        friendRequestRepository.save(request);
+        friendRequestRepository.save(createRequest);
     }
 
     // ---------------- REMOVE FRIEND ----------------

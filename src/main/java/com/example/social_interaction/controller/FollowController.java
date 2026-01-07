@@ -1,5 +1,6 @@
 package com.example.social_interaction.controller;
 
+import com.example.social_interaction.dto.followRequest;
 import com.example.social_interaction.entity.FollowRequest;
 import com.example.social_interaction.entity.Follower;
 import com.example.social_interaction.service.RelationService;
@@ -24,12 +25,12 @@ public class FollowController {
      */
     @PostMapping("/follow")
     public ResponseEntity<Void> follow(
-            @RequestParam String followedId,
-            @RequestParam Boolean prvAcc,
+            @RequestBody followRequest request,
+
             Authentication authentication
     ) {
         String userId = authentication.getPrincipal().toString();
-        relationService.followRequest(userId, followedId ,prvAcc);
+        relationService.followRequest(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 

@@ -23,7 +23,17 @@ public class  FriendRequest {
 
     private String senderId;
 
+
+    private String senderAvatar;
+
+    private String senderName;
+
     private String receiverId;
+
+
+    private String receiverName;
+
+    private String receiverAvatar;
 
 
 

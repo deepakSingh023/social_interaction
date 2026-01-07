@@ -20,9 +20,16 @@ public class Follower {
 
     private String userId;//me
 
+    private String userAvatar;
+
+    private String userName;
+
     private String followedId;//the person being followed
+
+    private String followedAvatar;
+
+    private String followedName;
 
     private Date createdAt;
 
-    private Boolean prvAcc;
 }

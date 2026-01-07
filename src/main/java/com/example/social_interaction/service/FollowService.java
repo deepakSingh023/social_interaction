@@ -1,4 +1,5 @@
 package com.example.social_interaction.service;
+import com.example.social_interaction.dto.followRequest;
 import com.example.social_interaction.entity.FollowRequest;
 import com.example.social_interaction.entity.Follower;
 import com.example.social_interaction.repository.FollowRequestRepository;
@@ -30,51 +31,59 @@ public class FollowService implements RelationService{
   private final FollowRequestRepository followRequestRepository;
 
     @Override
-    public void followRequest(String userId, String followedId, Boolean prvAcc) {
+    public void followRequest(String userId, followRequest request) {
 
         if (!userRepository.existsById(userId)) {
             throw new IllegalArgumentException("Sender user does not exist");
         }
 
-        if (!userRepository.existsById(followedId)) {
+        if (!userRepository.existsById(request.getFollowedId())) {
             throw new IllegalArgumentException("Receiver user does not exist");
         }
 
-        if (followedId.equals(userId)) {
+        if (request.getFollowedId().equals(userId)) {
             throw new IllegalArgumentException("You cannot send a follow request to yourself");
         }
 
         // Already following
-        if (relationRepository.existsByUserIdAndFollowedId(userId, followedId)) {
+        if (relationRepository.existsByUserIdAndFollowedId(userId, request.getFollowedId())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Already following");
         }
 
         // 🔒 Private account → create follow request
-        if (Boolean.TRUE.equals(prvAcc)) {
+        if (Boolean.TRUE.equals(request.getPrvAcc())) {
 
             if (followRequestRepository
-                    .existsByUserIdAndFollowedId(userId, followedId)) {
+                    .existsByUserIdAndFollowedId(userId, request.getFollowedId())) {
                 throw new ResponseStatusException(
                         HttpStatus.CONFLICT,
                         "Follow request already sent");
             }
 
-            FollowRequest request = FollowRequest.builder()
+            FollowRequest createRequest = FollowRequest.builder()
                     .userId(userId)
-                    .followedId(followedId)
+                    .userAvatar(request.getUserName())
+                    .userName(request.getUserName())
+                    .followedId(request.getFollowedId())
+                    .followedAvatar(request.getFollowedAvatar())
+                    .followedName(request.getFollowedName())
                     .createdAt(Instant.now())
                     .build();
 
-            followRequestRepository.save(request);
+            followRequestRepository.save(createRequest);
             return;
         }
 
 
         Follower follower = Follower.builder()
                 .userId(userId)
-                .followedId(followedId)
+                .userAvatar(request.getUserName())
+                .userName(request.getUserName())
+                .followedId(request.getFollowedId())
+                .followedAvatar(request.getFollowedAvatar())
+                .followedName(request.getFollowedName())
                 .createdAt(new Date())
                 .build();
 
@@ -103,9 +112,12 @@ public class FollowService implements RelationService{
         // Create follower relationship
         Follower follower = Follower.builder()
                 .userId(userId)
+                .userAvatar(request.getUserAvatar())
+                .userName(request.getUserName())
                 .followedId(followedId)
+                .followedAvatar(request.getFollowedAvatar())
+                .followedName(request.getFollowedName())
                 .createdAt(new Date())
-                .prvAcc(true) // accepted from private account
                 .build();
 
         relationRepository.save(follower);

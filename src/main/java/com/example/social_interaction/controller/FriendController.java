@@ -1,5 +1,6 @@
 package com.example.social_interaction.controller;
 
+import com.example.social_interaction.dto.friendRequest;
 import com.example.social_interaction.entity.FriendRequest;
 import com.example.social_interaction.entity.Friends;
 import com.example.social_interaction.service.FriendService;
@@ -23,11 +24,11 @@ public class FriendController {
      */
     @PostMapping("/{receiverId}")
     public ResponseEntity<Void> addFriend(
-            @PathVariable String receiverId,
+            @RequestBody friendRequest request,
             Authentication authentication
     ) {
         String senderId = authentication.getPrincipal().toString();
-        friendService.addFriend(senderId, receiverId);
+        friendService.addFriend(senderId, request);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 

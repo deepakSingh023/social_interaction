@@ -1,5 +1,6 @@
 package com.example.social_interaction.service;
 
+import com.example.social_interaction.dto.friendRequest;
 import com.example.social_interaction.entity.FriendRequest;
 import com.example.social_interaction.entity.Friends;
 import org.springframework.data.domain.Page;
@@ -8,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 public interface FriendService {
 
     // Send friend request or auto-accept if inverse request exists
-    void addFriend(String senderId, String receiverId);
+    void addFriend(String senderId, friendRequest request);
 
     // Remove an existing friend
     void removeFriend(String senderId, String receiverId);

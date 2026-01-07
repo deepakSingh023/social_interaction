@@ -1,25 +1,16 @@
-package com.example.social_interaction.entity;
+package com.example.social_interaction.dto;
 
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-
-
-@Document("follow_requests")
-@Builder
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class FollowRequest {
-
-    @Id
-    private String id;
+@Builder
+@Data
+public class followRequest {
 
     private String userId;
 
@@ -33,5 +24,5 @@ public class FollowRequest {
 
     private String followedName;
 
-    private Instant createdAt;
+    private Boolean prvAcc;
 }

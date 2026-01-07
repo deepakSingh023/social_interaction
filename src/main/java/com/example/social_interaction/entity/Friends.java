@@ -22,7 +22,15 @@ public class Friends {
 
     private String senderId;
 
+    private String senderAvatar;
+
+    private String senderName;
+
     private String receiverId ;
+
+    private String receiverName;
+
+    private String receiverAvatar;
 
     private Instant acceptedAt;
 
