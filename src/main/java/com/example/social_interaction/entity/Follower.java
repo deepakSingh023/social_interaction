@@ -2,6 +2,7 @@ package com.example.social_interaction.entity;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
@@ -18,12 +19,15 @@ public class Follower {
     @Id
     private String id;
 
+    @Indexed
     private String userId;//me
 
     private String userAvatar;
 
     private String userName;
 
+
+    @Indexed
     private String followedId;//the person being followed
 
     private String followedAvatar;
