@@ -1,11 +1,15 @@
 package com.example.social_interaction.service;
+import com.example.social_interaction.dto.UpdateCounter;
 import com.example.social_interaction.dto.followRequest;
 import com.example.social_interaction.entity.FollowRequest;
 import com.example.social_interaction.entity.Follower;
+import com.example.social_interaction.enums.CounterType;
 import com.example.social_interaction.repository.FollowRequestRepository;
 import com.example.social_interaction.repository.RelationRepository;
 import com.example.social_interaction.repository.UserRepository;
+import com.example.social_interaction.tasks.CounterClient;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -30,6 +34,11 @@ public class FollowService implements RelationService{
 
   private final FollowRequestRepository followRequestRepository;
 
+  private final CounterClient counterClient;
+
+  @Value("${service.secret}")
+   private String secret;
+
     @Override
     public void followRequest(String userId, followRequest request) {
 
@@ -52,7 +61,7 @@ public class FollowService implements RelationService{
                     "Already following");
         }
 
-        // 🔒 Private account → create follow request
+
         if (Boolean.TRUE.equals(request.getPrvAcc())) {
 
             if (followRequestRepository
@@ -88,6 +97,22 @@ public class FollowService implements RelationService{
                 .build();
 
         relationRepository.save(follower);
+
+        UpdateCounter data = new UpdateCounter(
+                userId,
+                CounterType.FOLLOWING,
+                1
+        );
+
+        counterClient.denormalize(data,secret);
+
+        UpdateCounter data2 = new UpdateCounter(
+                request.getFollowedId(),
+                CounterType.FOLLOWER,
+                1
+        );
+
+        counterClient.denormalize(data2,secret);
     }
 
     @Override
@@ -122,6 +147,24 @@ public class FollowService implements RelationService{
 
         relationRepository.save(follower);
 
+        UpdateCounter data = new UpdateCounter(
+                request.getUserId(),
+                CounterType.FOLLOWING,
+                1
+        );
+
+        counterClient.denormalize(data,secret);
+
+        UpdateCounter data2 = new UpdateCounter(
+                request.getFollowedId(),
+                CounterType.FOLLOWER,
+                1
+        );
+
+        counterClient.denormalize(data2,secret);
+
+
+
         // Delete follow request after acceptance
         followRequestRepository.deleteById(requestId);
     }
@@ -146,6 +189,22 @@ public class FollowService implements RelationService{
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "No follow found"));
 
+        UpdateCounter data = new UpdateCounter(
+                userId,
+                CounterType.FOLLOWING,
+                -1
+        );
+
+        counterClient.denormalize(data,secret);
+
+        UpdateCounter data2 = new UpdateCounter(
+                followedId,
+                CounterType.FOLLOWER,
+                -1
+        );
+
+        counterClient.denormalize(data2,secret);
+
         relationRepository.delete(follower);
     }
 
@@ -155,6 +214,22 @@ public class FollowService implements RelationService{
                 .findByUserIdAndFollowedId(followedById, userId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "No follow found"));
+
+        UpdateCounter data = new UpdateCounter(
+                followedById,
+                CounterType.FOLLOWING,
+                -1
+        );
+
+        counterClient.denormalize(data,secret);
+
+        UpdateCounter data2 = new UpdateCounter(
+                userId,
+                CounterType.FOLLOWER,
+                -1
+        );
+
+        counterClient.denormalize(data2,secret);
 
         relationRepository.delete(follower);
     }

@@ -1,15 +1,19 @@
 package com.example.social_interaction.service;
 
+import com.example.social_interaction.dto.UpdateCounter;
 import com.example.social_interaction.dto.friendRequest;
 import com.example.social_interaction.entity.FollowRequest;
 import com.example.social_interaction.entity.FriendRequest;
 import com.example.social_interaction.entity.Friends;
+import com.example.social_interaction.enums.CounterType;
 import com.example.social_interaction.enums.FriendRequestStatus;
 import com.example.social_interaction.repository.FriendRepository;
 import com.example.social_interaction.repository.FriendRequestRepository;
 import com.example.social_interaction.repository.UserRepository;
+import com.example.social_interaction.tasks.CounterClient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +34,10 @@ public class FriendServiceImpl implements FriendService {
     private final FriendRequestRepository friendRequestRepository;
     private final FriendRepository friendRepository;
     private final UserRepository userRepository;
+    private final CounterClient counterClient;
+
+    @Value("${service.secret}")
+    private String secret;
 
     // ---------------- ADD FRIEND ----------------
 
@@ -76,6 +84,23 @@ public class FriendServiceImpl implements FriendService {
 
             friendRepository.save(friend);
             friendRequestRepository.delete(req);
+
+            UpdateCounter data = new UpdateCounter(
+                    senderId,
+                    CounterType.FRIENDS,
+                    1
+            );
+
+            counterClient.denormalize(data,secret);
+            UpdateCounter data2 = new UpdateCounter(
+                    request.getReceiverId(),
+                    CounterType.FRIENDS,
+                    1
+            );
+
+            counterClient.denormalize(data2,secret);
+
+
             return;
         }
 
@@ -104,6 +129,22 @@ public class FriendServiceImpl implements FriendService {
                 )
                 .orElseThrow(() ->
                         new ResponseStatusException(HttpStatus.NOT_FOUND, "Not friends"));
+
+        UpdateCounter data = new UpdateCounter(
+                senderId,
+                CounterType.FRIENDS,
+                -1
+        );
+
+        counterClient.denormalize(data,secret);
+
+        UpdateCounter data2 = new UpdateCounter(
+                receiverId,
+                CounterType.FRIENDS,
+                -1
+        );
+
+        counterClient.denormalize(data2,secret);
 
         friendRepository.delete(friend);
     }
@@ -142,6 +183,23 @@ public class FriendServiceImpl implements FriendService {
 
         friendRepository.save(friend);
         friendRequestRepository.delete(request);
+
+        UpdateCounter data = new UpdateCounter(
+                currentUserId,
+                CounterType.FRIENDS,
+                1
+        );
+
+        counterClient.denormalize(data,secret);
+
+        UpdateCounter data2 = new UpdateCounter(
+                friend.getSenderId(),
+                CounterType.FRIENDS,
+                1
+        );
+
+        counterClient.denormalize(data2,secret);
+
     }
 
     // ---------------- REJECT REQUEST ----------------
