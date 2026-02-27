@@ -9,7 +9,7 @@ import org.springframework.web.client.RestTemplate;
 public class KeepAliveTask {
 
     @Value("${ping.uri}")
-    private static String PING_URL;
+    private String PING_URL;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
