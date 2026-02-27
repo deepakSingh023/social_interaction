@@ -9,6 +9,7 @@ import com.example.social_interaction.repository.RelationRepository;
 import com.example.social_interaction.repository.UserRepository;
 import com.example.social_interaction.tasks.CounterClient;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,7 +25,7 @@ import java.util.Optional;
 import static java.time.LocalTime.now;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class FollowService implements RelationService{
 
 
@@ -37,7 +38,7 @@ public class FollowService implements RelationService{
   private final CounterClient counterClient;
 
   @Value("${service.secret}")
-   private String secret;
+  private String secret;
 
     @Override
     public void followRequest(String userId, followRequest request) {

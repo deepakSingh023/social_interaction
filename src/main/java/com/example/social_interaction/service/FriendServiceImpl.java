@@ -13,6 +13,7 @@ import com.example.social_interaction.repository.UserRepository;
 import com.example.social_interaction.tasks.CounterClient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -27,8 +28,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+
+@RequiredArgsConstructor
 @Service
-@AllArgsConstructor
 public class FriendServiceImpl implements FriendService {
 
     private final FriendRequestRepository friendRequestRepository;
