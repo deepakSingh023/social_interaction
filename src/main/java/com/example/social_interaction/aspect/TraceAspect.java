@@ -6,10 +6,12 @@ import org.aspectj.lang.annotation.Aspect;
 
 import org.slf4j.MDC;
 import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
 
+@Component
 @Aspect
 @Order(1)
 public class TraceAspect {
