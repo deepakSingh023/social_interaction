@@ -37,6 +37,7 @@ public class FriendServiceImpl implements FriendService {
     private final FriendRepository friendRepository;
     private final UserRepository userRepository;
     private final CounterClient counterClient;
+    private final InteractonService interactonService;
 
     @Value("${service.secret}")
     private String secret;
@@ -87,6 +88,8 @@ public class FriendServiceImpl implements FriendService {
             friendRepository.save(friend);
             friendRequestRepository.delete(req);
 
+
+
             UpdateCounter data = new UpdateCounter(
                     senderId,
                     CounterType.FRIENDS,
@@ -101,6 +104,9 @@ public class FriendServiceImpl implements FriendService {
             );
 
             counterClient.denormalize(data2,secret);
+
+            interactonService.createInteraction(senderId,request.getReceiverId());
+            interactonService.createInteraction(request.getReceiverId(),senderId);
 
 
             return;
