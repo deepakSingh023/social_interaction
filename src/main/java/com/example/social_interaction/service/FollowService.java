@@ -35,6 +35,8 @@ public class FollowService implements RelationService{
 
   private final FollowRequestRepository followRequestRepository;
 
+  private final InteractonService interactonService;
+
   private final CounterClient counterClient;
 
   @Value("${service.secret}")
@@ -98,6 +100,8 @@ public class FollowService implements RelationService{
                 .build();
 
         relationRepository.save(follower);
+
+        interactonService.createInteraction(follower.getFollowedId(),follower.getUserId());
 
         UpdateCounter data = new UpdateCounter(
                 userId,
@@ -163,6 +167,9 @@ public class FollowService implements RelationService{
         );
 
         counterClient.denormalize(data2,secret);
+
+
+        interactonService.createInteraction(followedId,userId);
 
 
 

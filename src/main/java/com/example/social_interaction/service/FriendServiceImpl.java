@@ -1,5 +1,6 @@
 package com.example.social_interaction.service;
 
+import com.example.social_interaction.dto.InteractionDto;
 import com.example.social_interaction.dto.UpdateCounter;
 import com.example.social_interaction.dto.friendRequest;
 import com.example.social_interaction.entity.FollowRequest;
@@ -11,6 +12,7 @@ import com.example.social_interaction.repository.FriendRepository;
 import com.example.social_interaction.repository.FriendRequestRepository;
 import com.example.social_interaction.repository.UserRepository;
 import com.example.social_interaction.tasks.CounterClient;
+import com.example.social_interaction.tasks.PostClient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,8 @@ public class FriendServiceImpl implements FriendService {
     private final UserRepository userRepository;
     private final CounterClient counterClient;
     private final InteractonService interactonService;
+
+    private final PostClient postClient;
 
     @Value("${service.secret}")
     private String secret;
@@ -104,6 +108,18 @@ public class FriendServiceImpl implements FriendService {
             );
 
             counterClient.denormalize(data2,secret);
+
+            InteractionDto data3 = new InteractionDto(
+                    senderId,request.getReceiverId()
+            );
+
+            InteractionDto data4 = new InteractionDto(
+                    request.getReceiverId(),
+                    senderId
+            );
+
+            postClient.createFeed(data3);
+            postClient.createFeed(data4);
 
             interactonService.createInteraction(senderId,request.getReceiverId());
             interactonService.createInteraction(request.getReceiverId(),senderId);
@@ -207,6 +223,20 @@ public class FriendServiceImpl implements FriendService {
         );
 
         counterClient.denormalize(data2,secret);
+
+        InteractionDto data3 = new InteractionDto(
+                currentUserId,friend.getSenderId()
+        );
+
+        InteractionDto data4 = new InteractionDto(
+                friend.getSenderId(),currentUserId
+        );
+
+        postClient.createFeed(data3);
+        postClient.createFeed(data4);
+
+        interactonService.createInteraction(currentUserId, friend.getSenderId());
+        interactonService.createInteraction(friend.getSenderId(), currentUserId);
 
     }
 
