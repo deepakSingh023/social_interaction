@@ -1,4 +1,5 @@
 package com.example.social_interaction.service;
+import com.example.social_interaction.dto.InteractionDto;
 import com.example.social_interaction.dto.UpdateCounter;
 import com.example.social_interaction.dto.followRequest;
 import com.example.social_interaction.entity.FollowRequest;
@@ -8,6 +9,7 @@ import com.example.social_interaction.repository.FollowRequestRepository;
 import com.example.social_interaction.repository.RelationRepository;
 import com.example.social_interaction.repository.UserRepository;
 import com.example.social_interaction.tasks.CounterClient;
+import com.example.social_interaction.tasks.PostClient;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +40,8 @@ public class FollowService implements RelationService{
   private final InteractonService interactonService;
 
   private final CounterClient counterClient;
+
+  private final PostClient postClient;
 
   @Value("${service.secret}")
   private String secret;
@@ -103,21 +107,27 @@ public class FollowService implements RelationService{
 
         interactonService.createInteraction(follower.getFollowedId(),follower.getUserId());
 
-        UpdateCounter data = new UpdateCounter(
+        InteractionDto data = new InteractionDto(
+                follower.getFollowedId(),follower.getUserId()
+        );
+
+        postClient.createFeed(data);
+
+        UpdateCounter data2 = new UpdateCounter(
                 userId,
                 CounterType.FOLLOWING,
                 1
         );
 
-        counterClient.denormalize(data,secret);
+        counterClient.denormalize(data2,secret);
 
-        UpdateCounter data2 = new UpdateCounter(
+        UpdateCounter data3 = new UpdateCounter(
                 request.getFollowedId(),
                 CounterType.FOLLOWER,
                 1
         );
 
-        counterClient.denormalize(data2,secret);
+        counterClient.denormalize(data3,secret);
     }
 
     @Override
@@ -167,6 +177,15 @@ public class FollowService implements RelationService{
         );
 
         counterClient.denormalize(data2,secret);
+
+
+        InteractionDto data3 = new InteractionDto(
+                followedId,userId
+        );
+
+        postClient.createFeed(data3);
+
+
 
 
         interactonService.createInteraction(followedId,userId);
