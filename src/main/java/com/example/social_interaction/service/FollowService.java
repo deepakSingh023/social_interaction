@@ -1,5 +1,6 @@
 package com.example.social_interaction.service;
 import com.example.social_interaction.dto.InteractionDto;
+import com.example.social_interaction.dto.ProfileDto;
 import com.example.social_interaction.dto.UpdateCounter;
 import com.example.social_interaction.dto.followRequest;
 import com.example.social_interaction.entity.FollowRequest;
@@ -7,12 +8,13 @@ import com.example.social_interaction.entity.Follower;
 import com.example.social_interaction.enums.CounterType;
 import com.example.social_interaction.repository.FollowRequestRepository;
 import com.example.social_interaction.repository.RelationRepository;
-import com.example.social_interaction.repository.UserRepository;
 import com.example.social_interaction.tasks.CounterClient;
 import com.example.social_interaction.tasks.PostClient;
+import com.example.social_interaction.tasks.ProfileClient;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.mail.MailProperties;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -20,9 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static java.time.LocalTime.now;
 
@@ -33,7 +33,7 @@ public class FollowService implements RelationService{
 
   private final RelationRepository relationRepository;
 
-  private final UserRepository userRepository;
+  private final ProfileClient profileClient;
 
   private final FollowRequestRepository followRequestRepository;
 
@@ -43,18 +43,24 @@ public class FollowService implements RelationService{
 
   private final PostClient postClient;
 
+  private final DenormalizeAndFeedService denormalizeAndFeedService;
+
   @Value("${service.secret}")
   private String secret;
 
     @Override
     public void followRequest(String userId, followRequest request) {
 
-        if (!userRepository.existsById(userId)) {
-            throw new IllegalArgumentException("Sender user does not exist");
-        }
+        Map<String, ProfileDto> profiles =
+                profileClient.getProfiles(List.of(userId, request.getFollowedId()),secret);
 
-        if (!userRepository.existsById(request.getFollowedId())) {
-            throw new IllegalArgumentException("Receiver user does not exist");
+        if (!profiles.containsKey(userId) ||
+                !profiles.containsKey(request.getFollowedId())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "User not found"
+            );
         }
 
         if (request.getFollowedId().equals(userId)) {
@@ -69,6 +75,8 @@ public class FollowService implements RelationService{
         }
 
 
+
+
         if (Boolean.TRUE.equals(request.getPrvAcc())) {
 
             if (followRequestRepository
@@ -80,11 +88,11 @@ public class FollowService implements RelationService{
 
             FollowRequest createRequest = FollowRequest.builder()
                     .userId(userId)
-                    .userAvatar(request.getUserName())
-                    .userName(request.getUserName())
+                    .userAvatar(profiles.get(userId).avatar())
+                    .userName(profiles.get(userId).username())
                     .followedId(request.getFollowedId())
-                    .followedAvatar(request.getFollowedAvatar())
-                    .followedName(request.getFollowedName())
+                    .followedAvatar(profiles.get(request.getFollowedId()).avatar())
+                    .followedName(profiles.get(request.getFollowedId()).username())
                     .createdAt(Instant.now())
                     .build();
 
@@ -95,39 +103,31 @@ public class FollowService implements RelationService{
 
         Follower follower = Follower.builder()
                 .userId(userId)
-                .userAvatar(request.getUserName())
-                .userName(request.getUserName())
+                .userAvatar(profiles.get(userId).avatar())
+                .userName(profiles.get(userId).username())
                 .followedId(request.getFollowedId())
-                .followedAvatar(request.getFollowedAvatar())
-                .followedName(request.getFollowedName())
-                .createdAt(new Date())
+                .followedAvatar(profiles.get(request.getFollowedId()).avatar())
+                .followedName(profiles.get(request.getFollowedId()).username())
+                .createdAt(Instant.now())
                 .build();
 
         relationRepository.save(follower);
 
         interactonService.createInteraction(follower.getFollowedId(),follower.getUserId());
+        
 
-        InteractionDto data = new InteractionDto(
-                follower.getFollowedId(),follower.getUserId()
-        );
-
-        postClient.createFeed(data);
-
-        UpdateCounter data2 = new UpdateCounter(
+        denormalizeAndFeedService.followerWorker(new UpdateCounter(
                 userId,
                 CounterType.FOLLOWING,
                 1
-        );
-
-        counterClient.denormalize(data2,secret);
-
-        UpdateCounter data3 = new UpdateCounter(
+        ),new UpdateCounter(
                 request.getFollowedId(),
                 CounterType.FOLLOWER,
                 1
-        );
+        ),new InteractionDto(
+                follower.getFollowedId(),follower.getUserId()
+        ));
 
-        counterClient.denormalize(data3,secret);
     }
 
     @Override
@@ -157,7 +157,7 @@ public class FollowService implements RelationService{
                 .followedId(followedId)
                 .followedAvatar(request.getFollowedAvatar())
                 .followedName(request.getFollowedName())
-                .createdAt(new Date())
+                .createdAt(Instant.now())
                 .build();
 
         relationRepository.save(follower);
@@ -183,14 +183,9 @@ public class FollowService implements RelationService{
                 followedId,userId
         );
 
-        postClient.createFeed(data3);
-
-
-
+        postClient.createFeed(data3,secret);
 
         interactonService.createInteraction(followedId,userId);
-
-
 
         // Delete follow request after acceptance
         followRequestRepository.deleteById(requestId);

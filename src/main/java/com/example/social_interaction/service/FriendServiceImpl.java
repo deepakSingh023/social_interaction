@@ -1,8 +1,6 @@
 package com.example.social_interaction.service;
 
-import com.example.social_interaction.dto.InteractionDto;
-import com.example.social_interaction.dto.UpdateCounter;
-import com.example.social_interaction.dto.friendRequest;
+import com.example.social_interaction.dto.*;
 import com.example.social_interaction.entity.FollowRequest;
 import com.example.social_interaction.entity.FriendRequest;
 import com.example.social_interaction.entity.Friends;
@@ -10,12 +8,13 @@ import com.example.social_interaction.enums.CounterType;
 import com.example.social_interaction.enums.FriendRequestStatus;
 import com.example.social_interaction.repository.FriendRepository;
 import com.example.social_interaction.repository.FriendRequestRepository;
-import com.example.social_interaction.repository.UserRepository;
 import com.example.social_interaction.tasks.CounterClient;
 import com.example.social_interaction.tasks.PostClient;
+import com.example.social_interaction.tasks.ProfileClient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
+import org.aspectj.weaver.patterns.IToken;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,9 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 
 @RequiredArgsConstructor
@@ -37,11 +34,15 @@ public class FriendServiceImpl implements FriendService {
 
     private final FriendRequestRepository friendRequestRepository;
     private final FriendRepository friendRepository;
-    private final UserRepository userRepository;
     private final CounterClient counterClient;
     private final InteractonService interactonService;
 
     private final PostClient postClient;
+
+    private final ProfileClient profileClient;
+
+    private final DenormalizeAndFeedService denormalizeAndFeedService;
+
 
     @Value("${service.secret}")
     private String secret;
@@ -51,13 +52,20 @@ public class FriendServiceImpl implements FriendService {
     @Override
     public void addFriend(String senderId, friendRequest request) {
 
-        if (!userRepository.existsById(senderId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sender not found");
+
+        Map<String, ProfileDto> profiles =
+                profileClient.getProfiles(List.of(senderId, request.getReceiverId()),secret);
+
+        if (!profiles.containsKey(senderId) ||
+                !profiles.containsKey(request.getReceiverId())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "User not found"
+            );
         }
 
-        if (!userRepository.existsById(request.getReceiverId())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Receiver not found");
-        }
+
 
         boolean alreadyFriends =
                 friendRepository.existsBySenderIdAndReceiverIdOrSenderIdAndReceiverId(
@@ -75,67 +83,55 @@ public class FriendServiceImpl implements FriendService {
                         senderId,request.getReceiverId()
                 );
 
+
+
         // Auto-accept if opposite request exists
         if (existingRequest.isPresent()) {
             FriendRequest req = existingRequest.get();
 
             Friends friend = Friends.builder()
                     .senderId(req.getSenderId())
-                    .senderAvatar(request.getSenderAvatar())
-                    .senderName(request.getSenderName())
+                    .senderAvatar(req.getSenderAvatar())
+                    .senderName(req.getSenderName())
                     .receiverId(req.getReceiverId())
-                    .receiverAvatar(request.getReceiverAvatar())
-                    .receiverName(request.getReceiverName())
+                    .receiverAvatar(req.getReceiverAvatar())
+                    .receiverName(req.getReceiverName())
                     .acceptedAt(Instant.now())
                     .build();
 
             friendRepository.save(friend);
             friendRequestRepository.delete(req);
 
-
-
-            UpdateCounter data = new UpdateCounter(
+            denormalizeAndFeedService.worker(new UpdateCounter(
                     senderId,
                     CounterType.FRIENDS,
                     1
-            );
-
-            counterClient.denormalize(data,secret);
-            UpdateCounter data2 = new UpdateCounter(
+            ),new UpdateCounter(
                     request.getReceiverId(),
                     CounterType.FRIENDS,
                     1
-            );
-
-            counterClient.denormalize(data2,secret);
-
-            InteractionDto data3 = new InteractionDto(
-                    senderId,request.getReceiverId()
-            );
-
-            InteractionDto data4 = new InteractionDto(
+            ),new InteractionDto(
+                    senderId,
+                    request.getReceiverId()
+            ),new InteractionDto(
                     request.getReceiverId(),
                     senderId
-            );
-
-            postClient.createFeed(data3);
-            postClient.createFeed(data4);
-
+            ));
             interactonService.createInteraction(senderId,request.getReceiverId());
             interactonService.createInteraction(request.getReceiverId(),senderId);
-
 
             return;
         }
 
+
         FriendRequest createRequest = FriendRequest.builder()
-                .senderId(request.getSenderId())
-                .senderAvatar(request.getSenderAvatar())
-                .senderName(request.getSenderName())
+                .senderId(senderId)
+                .senderAvatar(profiles.get(senderId).avatar())
+                .senderName(profiles.get(senderId).username())
                 .receiverId(request.getReceiverId())
-                .receiverAvatar(request.getReceiverAvatar())
-                .receiverName(request.getReceiverName())
-                .receivedAt(new Date())
+                .receiverAvatar(profiles.get(request.getReceiverId()).avatar())
+                .receiverName(profiles.get(request.getReceiverId()).username())
+                .receivedAt(Instant.now())
                 .build();
 
         friendRequestRepository.save(createRequest);
@@ -201,39 +197,34 @@ public class FriendServiceImpl implements FriendService {
 
         Friends friend = Friends.builder()
                 .senderId(request.getSenderId())
+                .senderAvatar(request.getSenderAvatar())
+                .senderName(request.getSenderName())
                 .receiverId(request.getReceiverId())
+                .receiverAvatar(request.getReceiverAvatar())
+                .receiverName(request.getReceiverName())
                 .acceptedAt(Instant.now())
                 .build();
 
         friendRepository.save(friend);
         friendRequestRepository.delete(request);
 
-        UpdateCounter data = new UpdateCounter(
+
+
+        denormalizeAndFeedService.worker(new UpdateCounter(
                 currentUserId,
                 CounterType.FRIENDS,
                 1
-        );
-
-        counterClient.denormalize(data,secret);
-
-        UpdateCounter data2 = new UpdateCounter(
+        ),new UpdateCounter(
                 friend.getSenderId(),
                 CounterType.FRIENDS,
                 1
-        );
-
-        counterClient.denormalize(data2,secret);
-
-        InteractionDto data3 = new InteractionDto(
-                currentUserId,friend.getSenderId()
-        );
-
-        InteractionDto data4 = new InteractionDto(
-                friend.getSenderId(),currentUserId
-        );
-
-        postClient.createFeed(data3);
-        postClient.createFeed(data4);
+        ),new InteractionDto(
+                currentUserId,
+                friend.getSenderId()
+        ),new InteractionDto(
+                friend.getSenderId(),
+                currentUserId
+        ));
 
         interactonService.createInteraction(currentUserId, friend.getSenderId());
         interactonService.createInteraction(friend.getSenderId(), currentUserId);

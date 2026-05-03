@@ -12,13 +12,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class friendRequest{
 
-    private String senderId;
-
-
-    private String senderAvatar;
-
-    private String senderName;
-
     private String receiverId;
 
 
