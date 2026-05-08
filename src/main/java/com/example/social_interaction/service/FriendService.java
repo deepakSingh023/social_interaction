@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 public interface FriendService {
 
     // Send friend request or auto-accept if inverse request exists
-    void addFriend(String senderId, friendRequest request);
+    void addFriend(String senderId, String receiverId);
 
     // Remove an existing friend
     void removeFriend(String senderId, String receiverId);

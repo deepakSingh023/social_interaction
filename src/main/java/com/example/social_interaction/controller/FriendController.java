@@ -24,11 +24,11 @@ public class FriendController {
      */
     @PostMapping("/{receiverId}")
     public ResponseEntity<Void> addFriend(
-            @RequestBody friendRequest request,
+            @PathVariable String receiverId,
             Authentication authentication
     ) {
         String senderId = authentication.getPrincipal().toString();
-        friendService.addFriend(senderId, request);
+        friendService.addFriend(senderId, receiverId);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 

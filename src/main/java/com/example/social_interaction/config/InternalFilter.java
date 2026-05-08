@@ -20,7 +20,8 @@ public class InternalFilter extends OncePerRequestFilter {
 
         String uri = request.getRequestURI();
         return ! (uri.startsWith("/api/interaction/denormalize")
-                 || uri.startsWith("/api/interactions/getInteractions"));
+                 || uri.startsWith("/api/interactions/getInteractions")
+                 || uri.startsWith("/api/interaction/check"));
     }
 
 
@@ -36,6 +37,7 @@ public class InternalFilter extends OncePerRequestFilter {
         if(secret == null || !secret.equals(localSecret)){
             response.setStatus(HttpServletResponse.SC_CONFLICT);
             response.getWriter().write("wrong secret");
+            return;
         }
 
         filterChain.doFilter(request,response);

@@ -50,14 +50,14 @@ public class FriendServiceImpl implements FriendService {
     // ---------------- ADD FRIEND ----------------
 
     @Override
-    public void addFriend(String senderId, friendRequest request) {
+    public void addFriend(String senderId, String receiverId) {
 
 
         Map<String, ProfileDto> profiles =
-                profileClient.getProfiles(List.of(senderId, request.getReceiverId()),secret);
+                profileClient.getProfiles(List.of(senderId, receiverId),secret);
 
         if (!profiles.containsKey(senderId) ||
-                !profiles.containsKey(request.getReceiverId())) {
+                !profiles.containsKey(receiverId)) {
 
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
@@ -69,8 +69,8 @@ public class FriendServiceImpl implements FriendService {
 
         boolean alreadyFriends =
                 friendRepository.existsBySenderIdAndReceiverIdOrSenderIdAndReceiverId(
-                        senderId, request.getReceiverId(),
-                        request.getReceiverId(), senderId
+                        senderId, receiverId,
+                        receiverId, senderId
                 );
 
         if (alreadyFriends) {
@@ -79,8 +79,8 @@ public class FriendServiceImpl implements FriendService {
 
         Optional<FriendRequest> existingRequest =
                 friendRequestRepository.findBySenderIdAndReceiverIdOrReceiverIdAndSenderId(
-                        senderId, request.getReceiverId(),
-                        senderId,request.getReceiverId()
+                        senderId, receiverId,
+                        senderId,receiverId
                 );
 
 
@@ -107,18 +107,18 @@ public class FriendServiceImpl implements FriendService {
                     CounterType.FRIENDS,
                     1
             ),new UpdateCounter(
-                    request.getReceiverId(),
+                    receiverId,
                     CounterType.FRIENDS,
                     1
             ),new InteractionDto(
                     senderId,
-                    request.getReceiverId()
+                    receiverId
             ),new InteractionDto(
-                    request.getReceiverId(),
+                    receiverId,
                     senderId
             ));
-            interactonService.createInteraction(senderId,request.getReceiverId());
-            interactonService.createInteraction(request.getReceiverId(),senderId);
+            interactonService.createInteraction(senderId,receiverId);
+            interactonService.createInteraction(receiverId,senderId);
 
             return;
         }
@@ -128,9 +128,9 @@ public class FriendServiceImpl implements FriendService {
                 .senderId(senderId)
                 .senderAvatar(profiles.get(senderId).avatar())
                 .senderName(profiles.get(senderId).username())
-                .receiverId(request.getReceiverId())
-                .receiverAvatar(profiles.get(request.getReceiverId()).avatar())
-                .receiverName(profiles.get(request.getReceiverId()).username())
+                .receiverId(receiverId)
+                .receiverAvatar(profiles.get(receiverId).avatar())
+                .receiverName(profiles.get(receiverId).username())
                 .receivedAt(Instant.now())
                 .build();
 
