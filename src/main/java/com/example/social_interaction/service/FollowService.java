@@ -228,6 +228,9 @@ public class FollowService implements RelationService{
         counterClient.denormalize(data2,secret);
 
         relationRepository.delete(follower);
+
+        interactonService.deleteInteraction(followedId,userId);
+
     }
 
     @Override
@@ -254,6 +257,8 @@ public class FollowService implements RelationService{
         counterClient.denormalize(data2,secret);
 
         relationRepository.delete(follower);
+
+        interactonService.deleteInteraction(userId,followedById);
     }
 
 

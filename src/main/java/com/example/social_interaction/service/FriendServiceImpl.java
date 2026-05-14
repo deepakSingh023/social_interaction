@@ -167,6 +167,9 @@ public class FriendServiceImpl implements FriendService {
         counterClient.denormalize(data2,secret);
 
         friendRepository.delete(friend);
+
+        interactonService.deleteInteraction(senderId,receiverId);
+        interactonService.deleteInteraction(receiverId,senderId);
     }
 
     // ---------------- GET FRIENDS (PAGINATED) ----------------

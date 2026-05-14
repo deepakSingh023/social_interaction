@@ -2,6 +2,8 @@ package com.example.social_interaction.service;
 
 import com.example.social_interaction.entity.Feed;
 import com.example.social_interaction.repository.FeedRepository;
+import com.example.social_interaction.repository.FriendRepository;
+import com.example.social_interaction.repository.RelationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -19,13 +21,17 @@ public class InteractonService {
 
     private final FeedRepository feedRepository;
 
+    private final FriendRepository friendRepository;
+
+    private final RelationRepository relationRepository;
+
 
 
     @Async
     public void createInteraction(String authorId, String recipientId){
 
         if(feedRepository.existsByAuthorIdOrRecipientUserId(authorId,recipientId)){
-            throw new ResponseStatusException(HttpStatus.ALREADY_REPORTED,"interaction already exist for these user");
+            return;
         }
 
         Feed feed = Feed.builder()
@@ -36,5 +42,31 @@ public class InteractonService {
 
 
         feedRepository.save(feed);
+    }
+
+    @Async
+    public void deleteInteraction(String authorId, String recipientId){
+
+        boolean friendshipExists =
+                friendRepository.existsBySenderIdAndReceiverIdOrSenderIdAndReceiverId(
+                        authorId,
+                        recipientId,
+                        recipientId,
+                        authorId
+                );
+
+        boolean followExists =
+                relationRepository.existsByUserIdAndFollowedId(
+                        recipientId,
+                        authorId
+                );
+
+        // if NO relation left -> remove interaction
+        if(!friendshipExists && !followExists){
+
+            feedRepository
+                    .findByAuthorIdAndRecipientUserId(authorId, recipientId)
+                    .ifPresent(feedRepository::delete);
+        }
     }
 }

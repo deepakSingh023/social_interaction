@@ -24,7 +24,6 @@ public class CheckInteractionService {
     private static final Logger log = LoggerFactory.getLogger(CheckInteractionService.class);
 
 
-    @Async
     public InteractionResponse checkInteraction(CheckInteraction data){
 
         log.info("the service is working fine");

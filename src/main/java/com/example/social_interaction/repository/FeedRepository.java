@@ -7,10 +7,13 @@ import org.springframework.data.mongodb.repository.Query;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 public interface FeedRepository extends MongoRepository<Feed, String> {
 
     boolean existsByAuthorIdOrRecipientUserId(String authorId, String recipientUserId);
+
+    Optional<Feed> findByAuthorIdAndRecipientUserId(String authorId, String recipientUserId);
 
     List<Feed> findTop100ByAuthorIdOrderByCreatedAtDescIdDesc(String authorId, Pageable pageable);
 

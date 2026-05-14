@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+//purpose of this service is to be used by the feed service to batch fetch the interaction to create feed for users who follow someone and the person they follows create a post
+
 @RequiredArgsConstructor
 @Service
 public class FeedInteractionFetch {
