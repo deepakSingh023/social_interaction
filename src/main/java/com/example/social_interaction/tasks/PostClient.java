@@ -3,9 +3,8 @@ package com.example.social_interaction.tasks;
 
 import com.example.social_interaction.dto.InteractionDto;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @FeignClient(name="ineraction", url="${feed.uri}")
 public interface PostClient {
@@ -15,4 +14,11 @@ public interface PostClient {
              @RequestBody InteractionDto data,
              @RequestHeader("X-SECRET-TOKEN") String token
      );
+
+    @DeleteMapping("/delete-feed")
+     void deleteFeed(
+            @RequestHeader("X-SECRET-TOKEN") String token,
+            @RequestParam String feedOwnerId,
+            @RequestParam String authorId
+    );
 }

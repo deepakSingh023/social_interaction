@@ -15,6 +15,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.aspectj.weaver.patterns.IToken;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -175,11 +176,94 @@ public class FriendServiceImpl implements FriendService {
     // ---------------- GET FRIENDS (PAGINATED) ----------------
 
     @Override
-    public Page<Friends> getFriends(String userId, Pageable pageable) {
-        return friendRepository.findBySenderIdOrReceiverId(
-                userId,
-                userId,
-                pageable
+    public FriendResponse getFriends(
+            String userId,
+            String cursor
+    ) {
+
+        List<Friends> friends;
+
+        Pageable pageable = PageRequest.of(
+                0,
+                10
+        );
+
+        if (cursor == null || cursor.isBlank()) {
+
+            friends =
+                    friendRepository
+                            .findTop10BySenderIdOrReceiverIdOrderByAcceptedAtDescIdDesc(
+                                    userId,
+                                    userId
+                            );
+
+        } else {
+
+            String[] parts = cursor.split("_", 2);
+
+            if (parts.length != 2) {
+                throw new RuntimeException("Invalid cursor");
+            }
+
+            Instant cursorDate =
+                    Instant.parse(parts[0]);
+
+            String cursorId = parts[1];
+
+            friends =
+                    friendRepository.findNextFriendsPage(
+                            userId,
+                            userId,
+                            cursorDate,
+                            cursorId,
+                            pageable
+                    );
+        }
+
+        boolean hasMore = friends.size()>10;
+
+        if(hasMore){
+            friends= friends.subList(0,10);
+        }
+
+        String nextCursor = null;
+
+        if (!friends.isEmpty()) {
+
+            Friends last =
+                    friends.get(friends.size() - 1);
+
+            nextCursor =
+                    last.getAcceptedAt().toString()
+                            + "_"
+                            + last.getId();
+        }
+
+        List<Response> res = friends.stream()
+                .map(friend->{
+                    boolean isSender = userId.equals(friend.getSenderId());
+
+                    return new Response(
+                            isSender
+                                    ? friend.getReceiverId()
+                                    : friend.getSenderId(),
+
+                            isSender
+                                    ? friend.getReceiverName()
+                                    : friend.getSenderName(),
+
+                            isSender
+                                    ? friend.getReceiverAvatar()
+                                    : friend.getSenderAvatar()
+
+                    );
+
+                }).toList();
+
+        return new FriendResponse(
+                res,
+                nextCursor,
+                hasMore
         );
     }
 
@@ -255,7 +339,141 @@ public class FriendServiceImpl implements FriendService {
     // ---------------- GET REQUESTS (PAGINATED) ----------------
 
     @Override
-    public Page<FriendRequest> getRequests(String userId, Pageable pageable) {
-        return friendRequestRepository.findByReceiverId(userId, pageable);
+    public RequestResponse getRequests(String userId, String cursor) {
+        List<FriendRequest> req;
+
+        Pageable pageable = PageRequest.of(
+                0,
+                10,
+                Sort.by(
+                        Sort.Order.desc("receivedAt"),
+                        Sort.Order.desc("_id")
+                )
+        );
+
+        if (cursor == null || cursor.isBlank()){
+
+             req = friendRequestRepository.findTop10ByReceiverIdOrderByReceivedAtDescIdDesc(userId);
+
+         }else{
+             String[] parts = cursor.split("_", 2);
+
+             if (parts.length != 2) {
+                 throw new RuntimeException("Invalid cursor");
+             }
+
+             Instant cursorDate = Instant.parse(parts[0]);
+             String cursorId = parts[1];
+
+             req = friendRequestRepository.findNextPage(
+                     userId,
+                     cursorDate,
+                     cursorId,
+                     pageable
+             );
+         }
+
+        String nextCursor = null;
+
+        if (!req.isEmpty()) {
+
+            FriendRequest last = req.get(req.size() - 1);
+
+            nextCursor =
+                    last.getReceivedAt().toString()
+                            + "_"
+                            + last.getId();
+        }
+
+        return new RequestResponse(req,nextCursor);
     }
+
+
+    @Override
+    public SearchRequest searchFriends(
+            String userId,
+            String cursor,
+            String query
+    ) {
+
+        PageRequest pageable = PageRequest.of(0, 11);
+
+        List<Friends> friends;
+
+        // FIRST PAGE
+        if (cursor == null || cursor.isBlank()) {
+
+            friends = friendRepository.findFriendsFirstPage(
+                    userId,
+                    query == null ? "" : query,
+                    pageable
+            );
+
+        } else {
+
+            // NEXT PAGE
+
+            String[] parts = cursor.split("_", 2);
+
+            Instant cursorDate = Instant.parse(parts[0]);
+
+            String cursorId = parts[1];
+
+            friends = friendRepository.findFriendsNextPage(
+                    userId,
+                    query == null ? "" : query,
+                    cursorDate,
+                    cursorId,
+                    pageable
+            );
+        }
+
+        // GENERATE NEXT CURSOR
+
+        boolean hasMore = friends.size()>10;
+
+        if(hasMore){
+            friends = friends.subList(0,10);
+        }
+
+        String nextCursor = null;
+
+        if (!friends.isEmpty()) {
+
+            Friends lastFriend = friends.get(friends.size() - 2);
+
+            nextCursor =
+                    lastFriend.getAcceptedAt().toString()
+                            + "_"
+                            + lastFriend.getId();
+        }
+
+        List<Response> res = friends.stream()
+                .map(friend->{
+                    boolean isSender = userId.equals(friend.getSenderId());
+
+                    return new Response(
+                            isSender
+                                    ? friend.getReceiverId()
+                                    : friend.getSenderId(),
+
+                            isSender
+                                    ? friend.getReceiverName()
+                                    : friend.getSenderName(),
+
+                            isSender
+                                    ? friend.getReceiverAvatar()
+                                    : friend.getSenderAvatar()
+
+                    );
+
+                        }).toList();
+
+        return new SearchRequest(
+                res,
+                nextCursor,
+                hasMore
+        );
+    }
+
 }

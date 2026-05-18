@@ -1,5 +1,7 @@
 package com.example.social_interaction.controller;
 
+import com.example.social_interaction.dto.FriendResponse;
+import com.example.social_interaction.dto.RequestResponse;
 import com.example.social_interaction.dto.friendRequest;
 import com.example.social_interaction.entity.FriendRequest;
 import com.example.social_interaction.entity.Friends;
@@ -11,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/friends")
@@ -45,17 +49,17 @@ public class FriendController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Get my friends (paginated)
-     */
     @GetMapping("/me")
-    public ResponseEntity<Page<Friends>> getMyFriends(
+    public ResponseEntity<FriendResponse> getMyFriends(
             Authentication authentication,
-            Pageable pageable
+            @RequestParam(required = false)
+            String cursor
     ) {
+
         String userId = authentication.getPrincipal().toString();
+
         return ResponseEntity.ok(
-                friendService.getFriends(userId, pageable)
+                friendService.getFriends(userId, cursor)
         );
     }
 
@@ -89,13 +93,14 @@ public class FriendController {
      * Get my incoming friend requests (paginated)
      */
     @GetMapping("/requests")
-    public ResponseEntity<Page<FriendRequest>> getMyFriendRequests(
+    public ResponseEntity<RequestResponse> getMyFriendRequests(
             Authentication authentication,
-            Pageable pageable
+            @RequestParam(required = false) String cursor
     ) {
         String userId = authentication.getPrincipal().toString();
         return ResponseEntity.ok(
-                friendService.getRequests(userId, pageable)
+                friendService.getRequests(userId, cursor)
         );
     }
+
 }

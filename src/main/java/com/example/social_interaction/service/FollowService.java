@@ -1,11 +1,9 @@
 package com.example.social_interaction.service;
-import com.example.social_interaction.dto.InteractionDto;
-import com.example.social_interaction.dto.ProfileDto;
-import com.example.social_interaction.dto.UpdateCounter;
-import com.example.social_interaction.dto.followRequest;
+import com.example.social_interaction.dto.*;
 import com.example.social_interaction.entity.FollowRequest;
 import com.example.social_interaction.entity.Follower;
 import com.example.social_interaction.enums.CounterType;
+import com.example.social_interaction.enums.FollowerType;
 import com.example.social_interaction.repository.FollowRequestRepository;
 import com.example.social_interaction.repository.RelationRepository;
 import com.example.social_interaction.tasks.CounterClient;
@@ -16,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.mail.MailProperties;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -259,6 +258,122 @@ public class FollowService implements RelationService{
         relationRepository.delete(follower);
 
         interactonService.deleteInteraction(userId,followedById);
+    }
+
+    @Override
+    public FollowResult searchConnections(
+            String userId,
+            FollowerType type,
+            String query,
+            String cursor
+    ) {
+
+        PageRequest pageable = PageRequest.of(0, 11);
+
+        List<Follower> followers;
+
+        boolean firstPage =
+                cursor == null || cursor.isBlank();
+
+        switch (type) {
+
+            case FOLLOWERS -> {
+
+                if (firstPage) {
+
+                    followers = relationRepository
+                            .findFollowersFirstPage(
+                                    userId,
+                                    query == null ? "" : query,
+                                    pageable
+                            );
+
+                } else {
+
+                    String[] parts = cursor.split("_", 2);
+
+                    Instant cursorDate =
+                            Instant.parse(parts[0]);
+
+                    String cursorId = parts[1];
+
+                    followers = relationRepository
+                            .findFollowersNextPage(
+                                    userId,
+                                    query == null ? "" : query,
+                                    cursorDate,
+                                    cursorId,
+                                    pageable
+                            );
+                }
+
+
+            }
+
+            case FOLLOWING -> {
+
+                if (firstPage) {
+
+                    followers = relationRepository
+                            .findFollowingFirstPage(
+                                    userId,
+                                    query == null ? "" : query,
+                                    pageable
+                            );
+
+                } else {
+
+                    String[] parts = cursor.split("_", 2);
+
+                    Instant cursorDate =
+                            Instant.parse(parts[0]);
+
+                    String cursorId = parts[1];
+
+                    followers = relationRepository
+                            .findFollowingNextPage(
+                                    userId,
+                                    query == null ? "" : query,
+                                    cursorDate,
+                                    cursorId,
+                                    pageable
+                            );
+                }
+            }
+
+            default -> throw new RuntimeException("Invalid type");
+        }
+
+        boolean hasMore = followers.size() > 10;
+
+        if (hasMore) {
+
+            followers = followers.subList(0, 10);
+        }
+
+
+        String nextCursor = null;
+
+        if (!followers.isEmpty()) {
+
+            Follower last =
+                    followers.get(followers.size() - 2);
+
+            nextCursor =
+                    last.getCreatedAt()
+                            + "_"
+                            + last.getId();
+
+
+        }
+
+
+
+        return new FollowResult(
+                followers,
+                nextCursor,
+                hasMore
+        );
     }
 
 

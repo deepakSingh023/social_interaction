@@ -1,7 +1,6 @@
 package com.example.social_interaction.entity;
 
 
-import com.example.social_interaction.enums.FriendRequestStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

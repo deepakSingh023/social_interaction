@@ -4,7 +4,9 @@ import com.example.social_interaction.entity.Feed;
 import com.example.social_interaction.repository.FeedRepository;
 import com.example.social_interaction.repository.FriendRepository;
 import com.example.social_interaction.repository.RelationRepository;
+import com.example.social_interaction.tasks.PostClient;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.scheduling.annotation.Async;
@@ -24,6 +26,12 @@ public class InteractonService {
     private final FriendRepository friendRepository;
 
     private final RelationRepository relationRepository;
+
+    private final PostClient postClient;
+
+
+    @Value("service.secret")
+    private String token;
 
 
 
@@ -64,9 +72,12 @@ public class InteractonService {
         // if NO relation left -> remove interaction
         if(!friendshipExists && !followExists){
 
-            feedRepository
-                    .findByAuthorIdAndRecipientUserId(authorId, recipientId)
-                    .ifPresent(feedRepository::delete);
+            feedRepository.deleteByAuthorIdAndRecipientUserId(
+                    authorId,
+                    recipientId
+            );
+
+            postClient.deleteFeed(token,recipientId,authorId);
         }
     }
 }

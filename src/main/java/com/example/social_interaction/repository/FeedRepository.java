@@ -33,4 +33,10 @@ public interface FeedRepository extends MongoRepository<Feed, String> {
                                Instant cursorTime,
                                String cursorId,
                                Pageable pageable);
+
+
+    void deleteByAuthorIdAndRecipientUserId(
+            String authorId,
+            String recipientUserId
+    );
 }
