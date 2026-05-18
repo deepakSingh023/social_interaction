@@ -185,7 +185,7 @@ public class FriendServiceImpl implements FriendService {
 
         Pageable pageable = PageRequest.of(
                 0,
-                10
+                11
         );
 
         if (cursor == null || cursor.isBlank()) {
@@ -344,7 +344,7 @@ public class FriendServiceImpl implements FriendService {
 
         Pageable pageable = PageRequest.of(
                 0,
-                10,
+                11,
                 Sort.by(
                         Sort.Order.desc("receivedAt"),
                         Sort.Order.desc("_id")
@@ -440,7 +440,7 @@ public class FriendServiceImpl implements FriendService {
 
         if (!friends.isEmpty()) {
 
-            Friends lastFriend = friends.get(friends.size() - 2);
+            Friends lastFriend = friends.get(friends.size() - 1);
 
             nextCursor =
                     lastFriend.getAcceptedAt().toString()

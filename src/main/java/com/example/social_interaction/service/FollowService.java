@@ -357,7 +357,7 @@ public class FollowService implements RelationService{
         if (!followers.isEmpty()) {
 
             Follower last =
-                    followers.get(followers.size() - 2);
+                    followers.get(followers.size() - 1);
 
             nextCursor =
                     last.getCreatedAt()
