@@ -218,6 +218,7 @@ public class FollowService implements RelationService{
 
         counterClient.denormalize(data,secret);
 
+
         UpdateCounter data2 = new UpdateCounter(
                 followedId,
                 CounterType.FOLLOWER,

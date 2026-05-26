@@ -30,7 +30,7 @@ public class InteractonService {
     private final PostClient postClient;
 
 
-    @Value("service.secret")
+    @Value("${service.secret}")
     private String token;
 
 

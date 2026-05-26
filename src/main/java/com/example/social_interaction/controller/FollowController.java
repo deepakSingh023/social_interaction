@@ -42,7 +42,7 @@ public class FollowController {
             @RequestParam String followedId,
             Authentication authentication
     ) {
-        String userId = authentication.getPrincipal().toString();
+        String userId = authentication.getName();
         relationService.stopFollowing(userId, followedId);
         return ResponseEntity.noContent().build();
     }

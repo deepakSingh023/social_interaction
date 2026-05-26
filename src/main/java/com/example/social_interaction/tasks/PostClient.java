@@ -15,7 +15,7 @@ public interface PostClient {
              @RequestHeader("X-SECRET-TOKEN") String token
      );
 
-    @DeleteMapping("/delete-feed")
+    @DeleteMapping("/api/feeds/delete-feed")
      void deleteFeed(
             @RequestHeader("X-SECRET-TOKEN") String token,
             @RequestParam String feedOwnerId,
