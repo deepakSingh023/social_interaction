@@ -8,6 +8,7 @@ import com.example.social_interaction.enums.CounterType;
 import com.example.social_interaction.enums.FriendRequestStatus;
 import com.example.social_interaction.repository.FriendRepository;
 import com.example.social_interaction.repository.FriendRequestRepository;
+import com.example.social_interaction.tasks.ChatClient;
 import com.example.social_interaction.tasks.CounterClient;
 import com.example.social_interaction.tasks.PostClient;
 import com.example.social_interaction.tasks.ProfileClient;
@@ -43,6 +44,8 @@ public class FriendServiceImpl implements FriendService {
     private final ProfileClient profileClient;
 
     private final DenormalizeAndFeedService denormalizeAndFeedService;
+
+    private final ChatClient  chatClient;
 
 
     @Value("${service.secret}")
@@ -121,6 +124,8 @@ public class FriendServiceImpl implements FriendService {
             interactonService.createInteraction(senderId,receiverId);
             interactonService.createInteraction(receiverId,senderId);
 
+            chatClient.createConversation(new ConversationDto(senderId,receiverId),secret);
+
             return;
         }
 
@@ -168,6 +173,8 @@ public class FriendServiceImpl implements FriendService {
         counterClient.denormalize(data2,secret);
 
         friendRepository.delete(friend);
+
+        chatClient.deleteConversation(new ConversationDto(senderId,receiverId),secret);
 
         interactonService.deleteInteraction(senderId,receiverId);
         interactonService.deleteInteraction(receiverId,senderId);
@@ -312,6 +319,8 @@ public class FriendServiceImpl implements FriendService {
                 friend.getSenderId(),
                 currentUserId
         ));
+
+        chatClient.createConversation(new ConversationDto(friend.getSenderId(),request.getReceiverId()),secret);
 
         interactonService.createInteraction(currentUserId, friend.getSenderId());
         interactonService.createInteraction(friend.getSenderId(), currentUserId);
