@@ -39,13 +39,12 @@ public class FriendServiceImpl implements FriendService {
     private final CounterClient counterClient;
     private final InteractonService interactonService;
 
-    private final PostClient postClient;
+    private final ConversationService conversationService;
 
     private final ProfileClient profileClient;
 
     private final DenormalizeAndFeedService denormalizeAndFeedService;
 
-    private final ChatClient  chatClient;
 
 
     @Value("${service.secret}")
@@ -124,7 +123,8 @@ public class FriendServiceImpl implements FriendService {
             interactonService.createInteraction(senderId,receiverId);
             interactonService.createInteraction(receiverId,senderId);
 
-            chatClient.createConversation(new ConversationDto(senderId,receiverId),secret);
+            conversationService.createConversation(senderId,receiverId);
+
 
             return;
         }
@@ -174,7 +174,7 @@ public class FriendServiceImpl implements FriendService {
 
         friendRepository.delete(friend);
 
-        chatClient.deleteConversation(new ConversationDto(senderId,receiverId),secret);
+        conversationService.deleteConversation(senderId,receiverId);
 
         interactonService.deleteInteraction(senderId,receiverId);
         interactonService.deleteInteraction(receiverId,senderId);
@@ -320,7 +320,7 @@ public class FriendServiceImpl implements FriendService {
                 currentUserId
         ));
 
-        chatClient.createConversation(new ConversationDto(friend.getSenderId(),request.getReceiverId()),secret);
+        conversationService.createConversation(friend.getSenderId(),friend.getReceiverId());
 
         interactonService.createInteraction(currentUserId, friend.getSenderId());
         interactonService.createInteraction(friend.getSenderId(), currentUserId);

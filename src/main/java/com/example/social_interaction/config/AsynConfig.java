@@ -25,4 +25,21 @@ public class AsynConfig {
         thread.initialize();
         return thread;
     }
+
+
+    @Bean("conversationUpdate")
+    public Executor conversationUpdate(){
+
+        ThreadPoolTaskExecutor thread = new ThreadPoolTaskExecutor();
+
+        thread.setCorePoolSize(10);
+        thread.setMaxPoolSize(20);
+        thread.setQueueCapacity(100);
+        thread.setThreadNamePrefix("-conversation");
+        thread.setRejectedExecutionHandler(
+                new ThreadPoolExecutor.CallerRunsPolicy()
+        );
+        thread.initialize();
+        return thread;
+    }
 }
