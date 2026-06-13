@@ -11,6 +11,8 @@ import com.example.social_interaction.tasks.PostClient;
 import com.example.social_interaction.tasks.ProfileClient;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.mail.MailProperties;
 import org.springframework.data.domain.Page;
@@ -40,9 +42,10 @@ public class FollowService implements RelationService{
 
   private final CounterClient counterClient;
 
-  private final PostClient postClient;
 
   private final DenormalizeAndFeedService denormalizeAndFeedService;
+
+  private final static Logger log = LoggerFactory.getLogger(FollowService.class);
 
   @Value("${service.secret}")
   private String secret;
@@ -161,33 +164,25 @@ public class FollowService implements RelationService{
 
         relationRepository.save(follower);
 
-        UpdateCounter data = new UpdateCounter(
-                request.getUserId(),
+        followRequestRepository.deleteById(requestId);
+
+
+        denormalizeAndFeedService.followerWorker(new UpdateCounter(
+                userId,
                 CounterType.FOLLOWING,
                 1
-        );
-
-        counterClient.denormalize(data,secret);
-
-        UpdateCounter data2 = new UpdateCounter(
+        ),new UpdateCounter(
                 request.getFollowedId(),
                 CounterType.FOLLOWER,
                 1
-        );
-
-        counterClient.denormalize(data2,secret);
-
-
-        InteractionDto data3 = new InteractionDto(
-                followedId,userId
-        );
-
-        postClient.createFeed(data3,secret);
+        ),new InteractionDto(
+                follower.getFollowedId(),follower.getUserId()
+        ));
 
         interactonService.createInteraction(followedId,userId);
 
-        // Delete follow request after acceptance
-        followRequestRepository.deleteById(requestId);
+
+
     }
 
 
@@ -210,13 +205,20 @@ public class FollowService implements RelationService{
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "No follow found"));
 
+        relationRepository.delete(follower);
+
         UpdateCounter data = new UpdateCounter(
                 userId,
                 CounterType.FOLLOWING,
                 -1
         );
 
-        counterClient.denormalize(data,secret);
+
+        try {
+            counterClient.denormalize(data, secret);
+        } catch (Exception e) {
+            log.error("counter update failed for user1 = {}", data.userId(), e);
+        }
 
 
         UpdateCounter data2 = new UpdateCounter(
@@ -225,9 +227,12 @@ public class FollowService implements RelationService{
                 -1
         );
 
-        counterClient.denormalize(data2,secret);
+        try {
+            counterClient.denormalize(data2, secret);
+        } catch (Exception e) {
+            log.error("counter update failed for user2 = {}", data2.userId(), e);
+        }
 
-        relationRepository.delete(follower);
 
         interactonService.deleteInteraction(followedId,userId);
 
@@ -240,13 +245,19 @@ public class FollowService implements RelationService{
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "No follow found"));
 
+        relationRepository.delete(follower);
+
         UpdateCounter data = new UpdateCounter(
                 followedById,
                 CounterType.FOLLOWING,
                 -1
         );
 
-        counterClient.denormalize(data,secret);
+        try {
+            counterClient.denormalize(data, secret);
+        } catch (Exception e) {
+            log.error("counter update failed for user1 = {}", data.userId(), e);
+        }
 
         UpdateCounter data2 = new UpdateCounter(
                 userId,
@@ -254,9 +265,13 @@ public class FollowService implements RelationService{
                 -1
         );
 
-        counterClient.denormalize(data2,secret);
+        try {
+            counterClient.denormalize(data2, secret);
+        } catch (Exception e) {
+            log.error("counter update failed for user2 = {}", data2.userId(), e);
+        }
 
-        relationRepository.delete(follower);
+
 
         interactonService.deleteInteraction(userId,followedById);
     }
