@@ -42,6 +42,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/interaction/denormalize").permitAll()
                         .requestMatchers("/api/interactions/getInteractions").permitAll()
                         .requestMatchers("/api/interaction/check").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )
